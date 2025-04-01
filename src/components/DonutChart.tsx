@@ -3,6 +3,10 @@ import React, { useEffect, useRef } from 'react'
 import * as d3 from "d3";
 import numberFormatter from '@/functions/numberFormatter';
 
+interface PieData {
+  name: string;
+  value: number;
+}
 const DonutChart = ({data}:any) => {
     const donutRef = useRef(null);
     useEffect(() => {
@@ -24,16 +28,18 @@ const DonutChart = ({data}:any) => {
     
         const pie = d3.pie().value((d: any) => d.value);
     
-        const dataReady = pie([
+        const rawData = [
           { name: "Existing", value: totalExisting },
           { name: "New", value: totalNew },
-        ]);
+        ];
+        
+        const pieData = pie(rawData.map((d) => d.value));
     
         const arc:any = d3.arc().innerRadius(80).outerRadius(radius);
         const colors = d3.scaleOrdinal(["#1f77b4", "#ff7f0e"]);
     
         g.selectAll(".arc")
-          .data(dataReady)
+          .data(pieData)
           .enter()
           .append("path")
           .attr("d", arc)
@@ -48,7 +54,7 @@ const DonutChart = ({data}:any) => {
     
         // Add the numbers and percentages inside the pie sections
         g.selectAll(".label")
-          .data(dataReady)
+          .data(pieData)
           .enter()
           .append("text")
           .attr("transform", (d) => {
