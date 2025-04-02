@@ -7,76 +7,153 @@ interface PieData {
   name: string;
   value: number;
 }
-const DonutChart = ({data}:any) => {
-    const donutRef = useRef(null);
-    useEffect(() => {
-        if (data.length === 0) return;
+
+const DonutChart = ({data, chartType}: any) => {
+  const donutRef = useRef(null);
+  
+  useEffect(() => {
+    if (data.length === 0) return;
     
-        const totalNew = d3.sum(data, (d: any) => d.New);
-        const totalExisting = d3.sum(data, (d: any) => d.Existing);
-        const total = totalNew + totalExisting;
+    let rawData;
+    if (chartType === "Customer") {
+      rawData = [
+        { name: "Existing Customer", value: d3.sum(data, (d: any) => d.Existing || 0) },
+        { name: "New Customer", value: d3.sum(data, (d: any) => d.New || 0) },
+      ];
+    } else {
+      rawData = d3.rollups(
+        data.flatMap((d: any) => 
+          Object.keys(d).filter((key) => key !== "quarter").map((key) => ({ name: key, value: d[key] }))
+        ),
+        (values) => d3.sum(values, (d: any) => d.value),
+        (d: any) => d.name
+      ).map(([name, value]) => ({ name, value }));
+    }
     
-        const donutSvg = d3.select(donutRef.current);
-        donutSvg.selectAll("*").remove();
-        const width = 300;
-        const height = 300;
-        const radius = Math.min(width, height) / 2;
+    const total = d3.sum(rawData, (d) => d.value);
+    const donutSvg = d3.select(donutRef.current);
+    donutSvg.selectAll("*").remove();
     
-        const g = donutSvg
-          .append("g")
-          .attr("transform", `translate(${width / 2},${height / 2})`);
+    const width = 450;
+    const height = 300;
+    const radius = Math.min(width, height) / 2.5;
     
-        const pie = d3.pie().value((d: any) => d.value);
+    const svg = donutSvg
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [-width / 2, -height / 2, width, height])
+      .attr("style", "max-width: 100%; height: auto;");
+
+    // Consistent color scheme based on your images
+    const colorScheme:any = {
+      // Team Type colors (from Image 1)
+      "Asia Pac": "#1E88E5",       // Blue
+      "Enterprise": "#FF8C00",     // Orange
+      "Europe": "#4CAF50",         // Green
+      "Latin America": "#E53935",  // Red
+      "North America": "#9C27B0",  // Purple
+      
+      // Account Industry colors (from Image 2)
+      "Manufacturing": "#1E88E5",  // Blue
+      "Transportation": "#FF8C00", // Orange
+      "Wholesalers": "#4CAF50",    // Green
+      "Financial Svcs": "#E53935", // Red
+      "Tecnology Svcs": "#9C27B0", // Purple
+      "Retail": "#795548",         // Brown,
+      "Others":"#FFC0CB",
+      "Education":"#808080",
+      
+      // Customer type colors
+      "Existing Customer": "#2185d0", // Blue
+      "New Customer": "#ff8c00"      // Orange
+    };
+
+    // Create a color scale using our defined scheme
+    const colors = (name: string) => {
+      return colorScheme[name] || "#888888"; // Fallback gray for any undefined categories
+    };
+
+    // Create pie layout
+    const pie = d3.pie()
+      .sort(null)
+      .value((d: any) => d.value);
+
+    const pieData = pie(rawData as any);
     
-        const rawData = [
-          { name: "Existing", value: totalExisting },
-          { name: "New", value: totalNew },
-        ];
-        
-        const pieData = pie(rawData.map((d) => d.value));
+    // Arc generators
+    const arc = d3.arc()
+      .innerRadius(radius * 0.6)
+      .outerRadius(radius);
     
-        const arc:any = d3.arc().innerRadius(80).outerRadius(radius);
-        const colors = d3.scaleOrdinal(["#1f77b4", "#ff7f0e"]);
+    const outerArc = d3.arc()
+      .innerRadius(radius * 1.1)
+      .outerRadius(radius * 1.1);
     
-        g.selectAll(".arc")
-          .data(pieData)
-          .enter()
-          .append("path")
-          .attr("d", arc)
-          .attr("fill", (d:any) => colors(d.data.name));
+    // Add the arcs
+    svg.selectAll("path")
+      .data(pieData)
+      .join("path")
+      .attr("fill", (d:any) => colors(d.data.name))
+      .attr("d", arc as any);
     
-        // Add the total value in the center
-        g.append("text")
-          .attr("text-anchor", "middle")
-          .attr("dy", "0.35em")
-          .text(`Total: $${numberFormatter(total)}`)
-          .style("font-size", "14px");
+    // Add the polylines between chart and labels
+    svg.selectAll("polyline")
+    .data(pieData)
+    .join("polyline")
+    .attr("stroke", "black")
+    .attr("fill", "none")
+    .attr("stroke-width", 1)
+    .attr("points", (d: any) => {
+      const posA = arc.centroid(d);
+      const posB = outerArc.centroid(d);
+      const posC = outerArc.centroid(d);
+      posC[0] = posC[0] > 0 ? posC[0] + 10 : posC[0] - 10;
+  
+      // Convert array to a string: "x1,y1 x2,y2 x3,y3"
+      return [posA, posB, posC].map(p => p.join(",")).join(" ");
+    });
+  
     
-        // Add the numbers and percentages inside the pie sections
-        g.selectAll(".label")
-          .data(pieData)
-          .enter()
-          .append("text")
-          .attr("transform", (d) => {
-            const centroid = arc.centroid(d);
-            return `translate(${centroid[0]},${centroid[1]})`;
-          })
-          .attr("text-anchor", "middle")
-          .attr("dy", ".35em")
-          .text((d:any) => {
-            const percentage = ((d.data.value / total) * 100).toFixed(1);
-            return `$${numberFormatter(d.data.value)} (${percentage}%)`;
-          })
-          .style("font-size", "12px")
-          .style("fill", "white");
-      }, [data]);
+    // Add the labels
+    svg.selectAll(".label")
+      .data(pieData)
+      .join("text")
+      .attr("transform", (d: any) => {
+        const pos = outerArc.centroid(d);
+        pos[0] = pos[0] > 0 ? pos[0] + 15 : pos[0] - 15;
+        return `translate(${pos})`;
+      })
+      .attr("text-anchor", (d: any) => {
+        const midangle = d.startAngle + (d.endAngle - d.startAngle) / 2;
+        return midangle < Math.PI ? "start" : "end";
+      })
+      .text((d: any) => {
+        const percentage = ((d.data.value / total) * 100).toFixed(0);
+        return `$${numberFormatter(d.data.value)} (${percentage}%)`;
+      })
+      .style("font-size", "12px");
+    
+    // Add center text for total
+    svg.append("text")
+      .attr("text-anchor", "middle")
+      .attr("dy", "0em")
+      .text("Total")
+      .style("font-size", "14px");
+      
+    svg.append("text")
+      .attr("text-anchor", "middle")
+      .attr("dy", "1.2em")
+      .text(`$${numberFormatter(total)}`)
+      .style("font-size", "16px")
+      .style("font-weight", "bold");
+      
+  }, [data, chartType]);
+  
   return (
-    <Card
-    sx={{ p: 2, textAlign: "center", boxShadow: "none", border: "none" }}
-  >
-    <svg ref={donutRef} width={300} height={300}></svg>
-  </Card>
-  )
+    <Card sx={{  textAlign: "center", boxShadow: "none", border: "none" }}>
+      <svg ref={donutRef} width={450} height={300}></svg>
+    </Card>
+  );
 }
 
-export default DonutChart
+export default DonutChart;

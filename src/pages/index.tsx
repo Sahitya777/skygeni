@@ -25,7 +25,7 @@ export default function Home() {
   };
   return (
     <div className="bg-white w-full">
-      <div className="pt-[2rem] w-full flex justify-center">
+      <div className="pt-[1rem] w-full flex justify-end pr-[2rem]">
         <FormControl className="w-[200px] pt-[2rem]">
           <InputLabel id="demo-simple-select-label">Chart Type</InputLabel>
           <Select
@@ -42,7 +42,6 @@ export default function Home() {
         </FormControl>
       </div>
       <ACVBarChart chartType={chartType} />
-      {/* <COPy/> */}
     </div>
   );
 }
