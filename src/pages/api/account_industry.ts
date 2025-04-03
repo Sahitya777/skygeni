@@ -11,7 +11,19 @@ export default function handler(
   res: NextApiResponse<Data>,
 ) {
   if(req.method==='GET'){
-    const jsonData=JSON.stringify(IndustryData)
-    res.status(200).send(JSON.parse(jsonData))
+    const aggregatedData = IndustryData.reduce((acc: any, entry: any) => {
+      const { closed_fiscal_quarter, acv } = entry;
+      const categoryKey =  "Acct_Industry";
+      
+      if (!acc[closed_fiscal_quarter]) {
+        acc[closed_fiscal_quarter] = { quarter: closed_fiscal_quarter };
+      }
+      if (!acc[closed_fiscal_quarter][entry[categoryKey]]) {
+        acc[closed_fiscal_quarter][entry[categoryKey]] = 0;
+      }
+      acc[closed_fiscal_quarter][entry[categoryKey]] += acv;
+      return acc;
+    }, {});
+    res.status(200).send(aggregatedData)
   }
 }

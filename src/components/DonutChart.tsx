@@ -15,12 +15,14 @@ const DonutChart = ({data, chartType}: any) => {
     if (data.length === 0) return;
     
     let rawData;
+    // Process data based on chart type
     if (chartType === "Customer") {
       rawData = [
         { name: "Existing Customer", value: d3.sum(data, (d: any) => d.Existing || 0) },
         { name: "New Customer", value: d3.sum(data, (d: any) => d.New || 0) },
       ];
     } else {
+      // Flatten and aggregate data dynamically
       rawData = d3.rollups(
         data.flatMap((d: any) => 
           Object.keys(d).filter((key) => key !== "quarter").map((key) => ({ name: key, value: d[key] }))
@@ -32,7 +34,7 @@ const DonutChart = ({data, chartType}: any) => {
     
     const total = d3.sum(rawData, (d) => d.value);
     const donutSvg = d3.select(donutRef.current);
-    donutSvg.selectAll("*").remove();
+    donutSvg.selectAll("*").remove(); // Clear previous SVG elements
     
     const width = 450;
     const height = 300;
@@ -44,33 +46,28 @@ const DonutChart = ({data, chartType}: any) => {
       .attr("viewBox", [-width / 2, -height / 2, width, height])
       .attr("style", "max-width: 100%; height: auto;");
 
-    // Consistent color scheme based on your images
+    // Color scheme for different categories
     const colorScheme:any = {
-      // Team Type colors (from Image 1)
-      "Asia Pac": "#1E88E5",       // Blue
-      "Enterprise": "#FF8C00",     // Orange
-      "Europe": "#4CAF50",         // Green
-      "Latin America": "#E53935",  // Red
-      "North America": "#9C27B0",  // Purple
-      
-      // Account Industry colors (from Image 2)
-      "Manufacturing": "#1E88E5",  // Blue
-      "Transportation": "#FF8C00", // Orange
-      "Wholesalers": "#4CAF50",    // Green
-      "Financial Svcs": "#E53935", // Red
-      "Tecnology Svcs": "#9C27B0", // Purple
-      "Retail": "#795548",         // Brown,
-      "Others":"#FFC0CB",
-      "Education":"#808080",
-      
-      // Customer type colors
-      "Existing Customer": "#2185d0", // Blue
-      "New Customer": "#ff8c00"      // Orange
+      "Asia Pac": "#1E88E5",
+      "Enterprise": "#FF8C00",
+      "Europe": "#4CAF50",
+      "Latin America": "#E53935",
+      "North America": "#9C27B0",
+      "Manufacturing": "#1E88E5",
+      "Transportation": "#FF8C00",
+      "Wholesalers": "#4CAF50",
+      "Financial Svcs": "#E53935",
+      "Tecnology Svcs": "#9C27B0",
+      "Retail": "#795548",
+      "Others": "#FFC0CB",
+      "Education": "#808080",
+      "Existing Customer": "#2185d0",
+      "New Customer": "#ff8c00"
     };
 
-    // Create a color scale using our defined scheme
+    // Function to get color for a category
     const colors = (name: string) => {
-      return colorScheme[name] || "#888888"; // Fallback gray for any undefined categories
+      return colorScheme[name] || "#888888"; // Default gray color
     };
 
     // Create pie layout
@@ -80,7 +77,7 @@ const DonutChart = ({data, chartType}: any) => {
 
     const pieData = pie(rawData as any);
     
-    // Arc generators
+    // Arc generators for slices and outer labels
     const arc = d3.arc()
       .innerRadius(radius * 0.6)
       .outerRadius(radius);
@@ -89,32 +86,29 @@ const DonutChart = ({data, chartType}: any) => {
       .innerRadius(radius * 1.1)
       .outerRadius(radius * 1.1);
     
-    // Add the arcs
+    // Append pie slices
     svg.selectAll("path")
       .data(pieData)
       .join("path")
       .attr("fill", (d:any) => colors(d.data.name))
       .attr("d", arc as any);
     
-    // Add the polylines between chart and labels
+    // Add connector lines between slices and labels
     svg.selectAll("polyline")
-    .data(pieData)
-    .join("polyline")
-    .attr("stroke", "black")
-    .attr("fill", "none")
-    .attr("stroke-width", 1)
-    .attr("points", (d: any) => {
-      const posA = arc.centroid(d);
-      const posB = outerArc.centroid(d);
-      const posC = outerArc.centroid(d);
-      posC[0] = posC[0] > 0 ? posC[0] + 10 : posC[0] - 10;
-  
-      // Convert array to a string: "x1,y1 x2,y2 x3,y3"
-      return [posA, posB, posC].map(p => p.join(",")).join(" ");
-    });
-  
+      .data(pieData)
+      .join("polyline")
+      .attr("stroke", "black")
+      .attr("fill", "none")
+      .attr("stroke-width", 1)
+      .attr("points", (d: any) => {
+        const posA = arc.centroid(d);
+        const posB = outerArc.centroid(d);
+        const posC = outerArc.centroid(d);
+        posC[0] = posC[0] > 0 ? posC[0] + 10 : posC[0] - 10;
+        return [posA, posB, posC].map(p => p.join(",")).join(" ");
+      });
     
-    // Add the labels
+    // Append labels for each segment
     svg.selectAll(".label")
       .data(pieData)
       .join("text")
@@ -133,7 +127,7 @@ const DonutChart = ({data, chartType}: any) => {
       })
       .style("font-size", "12px");
     
-    // Add center text for total
+    // Center text showing total value
     svg.append("text")
       .attr("text-anchor", "middle")
       .attr("dy", "0em")
@@ -150,7 +144,7 @@ const DonutChart = ({data, chartType}: any) => {
   }, [data, chartType]);
   
   return (
-    <Card sx={{  textAlign: "center", boxShadow: "none", border: "none" }}>
+    <Card sx={{ textAlign: "center", boxShadow: "none", border: "none" }}>
       <svg ref={donutRef} width={450} height={300}></svg>
     </Card>
   );

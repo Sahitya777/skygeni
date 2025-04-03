@@ -34,41 +34,7 @@ const ACVBarChart = ({ chartType }: { chartType: string }) => {
       .get(`/api/${getEndpoint(chartType)}`)
       .then((response) => {
         const rawData = response.data;
-        
-        if (chartType === "Account Industry" || chartType === "Team") {
-          const aggregatedData = rawData.reduce((acc: any, entry: any) => {
-            const { closed_fiscal_quarter, acv } = entry;
-            const categoryKey = chartType === "Account Industry" ? "Acct_Industry" : "Team";
-            
-            if (!acc[closed_fiscal_quarter]) {
-              acc[closed_fiscal_quarter] = { quarter: closed_fiscal_quarter };
-            }
-            if (!acc[closed_fiscal_quarter][entry[categoryKey]]) {
-              acc[closed_fiscal_quarter][entry[categoryKey]] = 0;
-            }
-            acc[closed_fiscal_quarter][entry[categoryKey]] += acv;
-            return acc;
-          }, {});
-          setData(Object.values(aggregatedData));
-        } else {
-          const aggregatedData = rawData.reduce((acc: any, entry: any) => {
-            const { closed_fiscal_quarter, acv, Cust_Type } = entry;
-            if (!acc[closed_fiscal_quarter]) {
-              acc[closed_fiscal_quarter] = {
-                quarter: closed_fiscal_quarter,
-                Existing: 0,
-                New: 0,
-              };
-            }
-            if (Cust_Type === "Existing Customer") {
-              acc[closed_fiscal_quarter].Existing += acv;
-            } else {
-              acc[closed_fiscal_quarter].New += acv;
-            }
-            return acc;
-          }, {});
-          setData(Object.values(aggregatedData));
-        }
+        setData(Object.values(rawData));
       })
       .catch((error) => {
         console.error("Error fetching data:", error);

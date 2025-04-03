@@ -20,7 +20,7 @@ const AnalyticsTable = ({data,chartType}:any) => {
     });
   };
 
-  // Get all industries across all quarters
+  // Get all unique industries across all quarters
   const getAllIndustries = () => {
     const industries = new Set();
     data.forEach((quarter: {}) => {
@@ -33,7 +33,7 @@ const AnalyticsTable = ({data,chartType}:any) => {
     return [...industries];
   };
   
-  // Calculate totals for each industry
+  // Calculate total ACV (Annual Contract Value) for each industry
   const calculateTotals = () => {
     const sortedData = getSortedQuarters();
     const industries = getAllIndustries();
@@ -53,9 +53,8 @@ const AnalyticsTable = ({data,chartType}:any) => {
     return { industryTotals, grandTotal };
   };
   
-  // Calculate number of opportunities (mocked for this example)
+  // Function to mock the number of opportunities per industry
   const getIndustryOpps = (industry: string) => {
-    // This would come from your actual data
     const mockOpps:any = {
       "Manufacturing": 102,
       "Transportation": 47,
@@ -70,7 +69,7 @@ const AnalyticsTable = ({data,chartType}:any) => {
     return mockOpps[industry] || 0;
   };
   
-  // Calculate percentage of total
+  // Function to calculate percentage of total value
   const calculatePercentage = (value: number, total: number) => {
     return total ? Math.round((value / total) * 100) : 0;
   };
@@ -108,7 +107,6 @@ const AnalyticsTable = ({data,chartType}:any) => {
               {industries
                 .sort((a:any, b:any) => industryTotals[b] - industryTotals[a])
                 .map((industry:any,index:number) => {
-                  // Calculate quarter totals for this industry
                   let totalOpps = 0;
                   
                   return (

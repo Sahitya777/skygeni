@@ -11,7 +11,23 @@ export default function handler(
   res: NextApiResponse<Data>,
 ) {
   if(req.method==='GET'){
-    const jsonData=JSON.stringify(CustomerData)
-    res.status(200).send(JSON.parse(jsonData))
+    const aggregatedData = CustomerData.reduce((acc: any, entry: any) => {
+      const { closed_fiscal_quarter, acv, Cust_Type } = entry;
+      if (!acc[closed_fiscal_quarter]) {
+        acc[closed_fiscal_quarter] = {
+          quarter: closed_fiscal_quarter,
+          Existing: 0,
+          New: 0,
+        };
+      }
+      if (Cust_Type === "Existing Customer") {
+        acc[closed_fiscal_quarter].Existing += acv;
+      } else {
+        acc[closed_fiscal_quarter].New += acv;
+      }
+      return acc
+    }, {});
+    return res.status(200).send(aggregatedData);
+    
   }
 }
